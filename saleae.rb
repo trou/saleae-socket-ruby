@@ -1,4 +1,20 @@
 #!/usr/bin/env ruby
+# Copyright 2014 Raphaël Rigo
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
 require "socket"
 require "pp"
 
@@ -8,10 +24,10 @@ end
 class Saleae
     # All commands that take 1 parameter
     Commands_one_param = [
-        :set_trigger,   #Param is an array of HIGH/LOW/NEGEDGE/POSEDGE values
+        :set_trigger,       #Param is an array of HIGH/LOW/NEGEDGE/POSEDGE values
         :set_num_samples,
         :set_performance,
-        :set_sample_rate,
+        :set_sample_rate,   # Param is an array [digital, analog]
         :set_capture_pretrigger_buffer_size,
         :capture_to_file,
         :save_to_file,
@@ -42,6 +58,7 @@ class Saleae
         :get_inputs, # Disabled ?
         :get_analyzers,
         :get_connected_devices,
+        :get_all_sample_rates,
         :reset_active_channels
     ]
     Commands_no_param.each do |c|
@@ -91,10 +108,6 @@ class Saleae
         return res[0].to_i
     end
 
-    def get_all_sample_rates()
-        return send_cmd_get_ints("GET_ALL_SAMPLE_RATES")
-    end
-
     def get_active_channels()
         res = send_command("GET_ACTIVE_CHANNELS").pop.split(',')
         digital = []
@@ -117,8 +130,8 @@ class Saleae
         send_command("SET_ACTIVE_CHANNELS", ["digital_channels"]+digital+["analog_channels"]+analog)
     end
 
-    def export_analyzers(id, file, pipe=False)
-        return send_command("EXPORT_ANALYZER, #{id}, #{file}, #{pipe}")
+    def export_analyzers(id, file, pipe=false)
+        return send_command("EXPORT_ANALYZER, #{id}, #{file}, #{"mXmitFile" if pipe}")
     end
 
     # TODO : finish
