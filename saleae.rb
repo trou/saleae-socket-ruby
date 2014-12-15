@@ -6,10 +6,9 @@ class CommandError < StandardError
 end
 
 class Saleae
-    attr_accessor :s
-    
-    # All commands that take 1 parameters
+    # All commands that take 1 parameter
     Commands_one_param = [
+        :set_trigger,   #Param is an array of HIGH/LOW/NEGEDGE/POSEDGE values
         :set_num_samples,
         :set_performance,
         :set_sample_rate,
@@ -43,28 +42,33 @@ class Saleae
     Commands_no_param = [
         :capture,
         :get_inputs, # Disabled ?
+        :get_analyzers,
+        :get_connected_devices,
         :reset_active_channels
     ]
     Commands_no_param.each do |c|
             define_method(c) do 
-                puts "c"
                 return send_command(c.upcase)
         end
     end
 
-    def initialize(host="localhost", port=10429)
-        @s = TCPSocket.new host, port
+    def log(msg, level=1)
+        puts msg if level <= @verb
+    end
 
+    def initialize(host="localhost", port=10429, verbose=0)
+        @s = TCPSocket.new host, port
+        @verb = verbose
     end
 
     def send_command(cmd_str, args=[])
         cmd = ([cmd_str]+args).join(', ')+"\x00"
-        puts cmd
+        log("send_command : "+cmd)
         @s.send(cmd, 0)
         resp_lines = []
         begin
             resp = @s.recv(1024)
-            pp resp
+            log("response : "+resp)
             resp_lines += resp.split("\n")
         end while resp_lines.index("ACK") == nil and resp_lines.index("NAK") == nil
         if resp_lines.index("NAK") then
@@ -72,7 +76,6 @@ class Saleae
         else
             resp_lines.delete("ACK")
         end
-        pp resp_lines
         return resp_lines
     end
 
@@ -90,19 +93,8 @@ class Saleae
         return res[0].to_i
     end
 
-    def set_trigger(trigs)
-    end
-
     def get_all_sample_rates()
         return send_cmd_get_ints("GET_ALL_SAMPLE_RATES")
-    end
-
-    def get_connected_devices()
-        return send_command("GET_CONNECTED_DEVICES")
-    end
-
-    def get_analyzers()
-        return send_command("GET_ANALYZERS")
     end
 
     def get_active_channels()
@@ -125,6 +117,22 @@ class Saleae
 
     def set_active_channels(digital=[], analog=[])
         send_command("SET_ACTIVE_CHANNELS", ["digital_channels"]+digital+["analog_channels"]+analog)
+    end
+
+    def export_data(channels, time)
+        options = []
+        if channel == "all"
+            options << "ALL_CHANNELS"
+        else
+            # TODO check keys
+            options += ["digital_channels"]+channels[:digital]+["analog_channels"]+channels[:analog]
+        end
+
+        if time == "all"
+            options << "ALL_TIME"
+        else
+            options << ["TIME_SPAN"+time]
+        end
     end
 
 end
