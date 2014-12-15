@@ -21,7 +21,6 @@ class Saleae
 
     Commands_one_param.each do |c|
             define_method(c) do |val|
-                puts "c"
                 return send_command(c.upcase, [val])
         end
     end
@@ -33,7 +32,6 @@ class Saleae
     ]
     Commands_get_int.each do |c|
             define_method(c) do 
-                puts "c"
                 return send_cmd_get_int(c.upcase)
         end
     end
@@ -119,6 +117,11 @@ class Saleae
         send_command("SET_ACTIVE_CHANNELS", ["digital_channels"]+digital+["analog_channels"]+analog)
     end
 
+    def export_analyzers(id, file, pipe=False)
+        return send_command("EXPORT_ANALYZER, #{id}, #{file}, #{pipe}")
+    end
+
+    # TODO : finish
     def export_data(channels, time)
         options = []
         if channel == "all"
