@@ -8,24 +8,50 @@ end
 class Saleae
     attr_accessor :s
     
-    Commands_set_int = [
+    # All commands that take 1 parameters
+    Commands_one_param = [
         :set_num_samples,
         :set_performance,
         :set_sample_rate,
-        :set_capture_pretrigger_buffer_size
+        :set_capture_pretrigger_buffer_size,
+        :capture_to_file,
+        :save_to_file,
+        :load_from_file,
+        :select_active_device,
         ]
 
+    Commands_one_param.each do |c|
+            define_method(c) do |val|
+                puts "c"
+                return send_command(c.upcase, [val])
+        end
+    end
+
+    # Commands returning an int
     Commands_get_int = [
         :get_performance,
         :get_capture_pretrigger_buffer_size
     ]
-
-    Commands_set_int.each do |c|
-            define_method(c) do |val|
+    Commands_get_int.each do |c|
+            define_method(c) do 
                 puts "c"
-                return send_command(c.upcase, [val.to_s(10)])
+                return send_cmd_get_int(c.upcase)
         end
     end
+
+    # Commands without param
+    Commands_no_param = [
+        :capture,
+        :get_inputs, # Disabled ?
+        :reset_active_channels
+    ]
+    Commands_no_param.each do |c|
+            define_method(c) do 
+                puts "c"
+                return send_command(c.upcase)
+        end
+    end
+
     def initialize(host="localhost", port=10429)
         @s = TCPSocket.new host, port
 
@@ -75,6 +101,10 @@ class Saleae
         return send_command("GET_CONNECTED_DEVICES")
     end
 
+    def get_analyzers()
+        return send_command("GET_ANALYZERS")
+    end
+
     def get_active_channels()
         res = send_command("GET_ACTIVE_CHANNELS").pop.split(',')
         digital = []
@@ -92,4 +122,9 @@ class Saleae
         digital.map!{|c| c.to_i(10)}
         return { :digital => digital, :analog => analog}
     end
+
+    def set_active_channels(digital=[], analog=[])
+        send_command("SET_ACTIVE_CHANNELS", ["digital_channels"]+digital+["analog_channels"]+analog)
+    end
+
 end
